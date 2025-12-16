@@ -1,0 +1,17 @@
+#[derive(Debug)]
+pub enum MyError {
+    IoError(std::io::Error),
+    Utf8Error(core::str::Utf8Error),
+}
+
+impl From<std::io::Error> for MyError {
+    fn from(value: std::io::Error) -> Self {
+        MyError::IoError(value)
+    }
+}
+
+impl From<core::str::Utf8Error> for MyError {
+    fn from(value: core::str::Utf8Error) -> Self {
+        MyError::Utf8Error(value)
+    }
+}
