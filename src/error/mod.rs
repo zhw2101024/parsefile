@@ -2,6 +2,7 @@
 pub enum MyError {
     IoError(std::io::Error),
     Utf8Error(core::str::Utf8Error),
+    ParseError(chrono::ParseError),
 }
 
 impl From<std::io::Error> for MyError {
@@ -13,5 +14,11 @@ impl From<std::io::Error> for MyError {
 impl From<core::str::Utf8Error> for MyError {
     fn from(value: core::str::Utf8Error) -> Self {
         MyError::Utf8Error(value)
+    }
+}
+
+impl From<chrono::ParseError> for MyError {
+    fn from(value: chrono::ParseError) -> Self {
+        MyError::ParseError(value)
     }
 }
