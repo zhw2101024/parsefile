@@ -8,7 +8,7 @@ fn parse_date(line: &str) -> Result<String, Error> {
     let Some((_, [year, month, day])) = date_re.captures(line).map(|caps| caps.extract()) else {
         let err = Error::new(
             ErrorKind::InvalidData,
-            format!("{} 不符合格式:\n播出日期 2025/12/15", line),
+            format!("  {} 不符合格式:\n  播出日期 2025/12/15", line),
         );
         return Err(err);
     };
@@ -23,7 +23,7 @@ fn parse_list(line: &str) -> Result<(u8, u8, String), Error> {
     let Some((_, [hour, minute, name])) = list_re.captures(line).map(|caps| caps.extract()) else {
         let err = Error::new(
             ErrorKind::InvalidData,
-            format!("{} 不符合格式：\n05:30 节目预告", line),
+            format!("  {} 不符合格式：\n  05:30 节目预告", line),
         );
         return Err(err);
     };
@@ -58,7 +58,7 @@ pub fn parse_content(contents: &str, programs: &mut Vec<Program>) -> Result<bool
                 match program.set_date(date.as_str()) {
                     Ok(_) => {}
                     Err(err) => {
-                        println!("第{}行解析出错：\n{}, detail:\n{}", lineno, line, err);
+                        println!("{}: 解析出错：\n  {}, detail:\n  {}", lineno, line, err);
                         ret = false;
                     }
                 }
@@ -69,7 +69,7 @@ pub fn parse_content(contents: &str, programs: &mut Vec<Program>) -> Result<bool
                     program.add_item(item);
                 }
                 Err(err) => {
-                    println!("第{}行解析出错：\n{}", lineno, err);
+                    println!("{}: 解析出错：\n{}", lineno, err);
                     ret = false;
                 }
             },

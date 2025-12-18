@@ -1,22 +1,24 @@
 use parsefile_lib::{MyError, Program};
-use parsefile_lib::{parse_file, write, write_single};
+use parsefile_lib::{parse_file, write_single};
 
-fn output(programs: &Vec<Program>) -> Result<(), MyError> {
-    let _res = write(programs)?;
-    let res = write_single(programs)?;
-    println!("{}", res);
-    Ok(())
+fn handle(path: &str) -> Result<bool, MyError> {
+    let mut programs: Vec<Program> = vec![];
+    let parsed = parse_file(path, &mut programs)?;
+    let ret = if parsed {
+        write_single(&programs)?
+    } else {
+        false
+    };
+    Ok(ret)
 }
 
 fn main() {
-    let path = "1.txt";
-
-    let mut programs: Vec<Program> = vec![];
-    match parse_file(path, &mut programs) {
-        Ok(v) => {
-            if v {
-                println!("{:?}", v);
-                let _ = output(&programs);
+    match handle("1.txt") {
+        Ok(succeed) => {
+            if succeed {
+                println!("Success!");
+            } else {
+                println!("Failed!");
             }
         }
         Err(e) => match e {
