@@ -9,3 +9,4 @@ name = "parsefile_lib"
 [dependencies]
 chrono = "0.4.42"
 regex = "1.12.2"
+rust_xlsxwriter = "0.92.2"

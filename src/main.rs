@@ -1,5 +1,12 @@
-use parsefile_lib::parse_file;
 use parsefile_lib::{MyError, Program};
+use parsefile_lib::{parse_file, write, write_single};
+
+fn output(programs: &Vec<Program>) -> Result<(), MyError> {
+    let _res = write(programs)?;
+    let res = write_single(programs)?;
+    println!("{}", res);
+    Ok(())
+}
 
 fn main() {
     let path = "1.txt";
@@ -9,9 +16,7 @@ fn main() {
         Ok(v) => {
             if v {
                 println!("{:?}", v);
-                for program in programs {
-                    program.print();
-                }
+                let _ = output(&programs);
             }
         }
         Err(e) => match e {
@@ -23,6 +28,9 @@ fn main() {
             }
             MyError::ParseError(parse_error) => {
                 println!("parse error:\n{}", parse_error);
+            }
+            MyError::XlsxError(xlsx_error) => {
+                println!("xlsx error:\n{}", xlsx_error);
             }
         },
     }

@@ -38,6 +38,7 @@ fn parse_list(line: &str) -> Result<(u8, u8, String), Error> {
 }
 
 pub fn parse_content(contents: &str, programs: &mut Vec<Program>) -> Result<bool, Error> {
+    let mut ret = true;
     let mut program = Program::default();
 
     for (index, line) in contents.lines().enumerate() {
@@ -52,16 +53,13 @@ pub fn parse_content(contents: &str, programs: &mut Vec<Program>) -> Result<bool
                     program = Program::default();
                 }
 
-                let date = parse_date(line)?;
+                let date = parse_date(line).unwrap_or("".to_string());
 
                 match program.set_date(date.as_str()) {
                     Ok(_) => {}
                     Err(err) => {
-                        let ioerr = Error::new(
-                            ErrorKind::InvalidData,
-                            format!("第{}行解析出错：\n{}, detail:\n{}", lineno, line, err),
-                        );
-                        return Err(ioerr);
+                        println!("第{}行解析出错：\n{}, detail:\n{}", lineno, line, err);
+                        ret = false;
                     }
                 }
             }
@@ -71,18 +69,15 @@ pub fn parse_content(contents: &str, programs: &mut Vec<Program>) -> Result<bool
                     program.add_item(item);
                 }
                 Err(err) => {
-                    let ioerr = Error::new(
-                        ErrorKind::InvalidData,
-                        format!("第{}行解析出错：\n{}", lineno, err),
-                    );
-                    return Err(ioerr);
+                    println!("第{}行解析出错：\n{}", lineno, err);
+                    ret = false;
                 }
             },
         }
     }
     programs.push(program);
 
-    Ok(true)
+    Ok(ret)
 }
 
 #[cfg(test)]

@@ -3,7 +3,10 @@ pub enum MyError {
     IoError(std::io::Error),
     Utf8Error(core::str::Utf8Error),
     ParseError(chrono::ParseError),
+    XlsxError(rust_xlsxwriter::XlsxError),
 }
+
+impl MyError {}
 
 impl From<std::io::Error> for MyError {
     fn from(value: std::io::Error) -> Self {
@@ -20,5 +23,11 @@ impl From<core::str::Utf8Error> for MyError {
 impl From<chrono::ParseError> for MyError {
     fn from(value: chrono::ParseError) -> Self {
         MyError::ParseError(value)
+    }
+}
+
+impl From<rust_xlsxwriter::XlsxError> for MyError {
+    fn from(value: rust_xlsxwriter::XlsxError) -> Self {
+        MyError::XlsxError(value)
     }
 }

@@ -11,6 +11,11 @@ impl Item {
     pub fn new(hour: u8, minute: u8, name: String) -> Self {
         Self { hour, minute, name }
     }
+
+    pub fn get_info(&self) -> (String, String) {
+        let time = format!("{:0>2}:{:0>2}", self.hour, self.minute);
+        (time, self.name.clone())
+    }
 }
 
 #[derive(Clone, Debug, Default)]
@@ -20,6 +25,14 @@ pub struct Program {
 }
 
 impl Program {
+    pub fn get_date(&self) -> String {
+        self.date.to_string()
+    }
+
+    pub fn get_items(&self) -> &Vec<Item> {
+        &self.items
+    }
+
     pub fn empty(&self) -> bool {
         self.items.is_empty()
     }
@@ -31,12 +44,5 @@ impl Program {
 
     pub fn add_item(&mut self, item: Item) {
         self.items.push(item);
-    }
-
-    pub fn print(&self) {
-        println!("date: {}", self.date);
-        self.items.iter().for_each(|item| {
-            println!("values: {},{},{}", item.hour, item.minute, item.name);
-        });
     }
 }
