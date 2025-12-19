@@ -1,4 +1,5 @@
 use crate::{Item, Program};
+use chrono::{Datelike, NaiveTime, TimeDelta};
 use regex::Regex;
 use std::io::{Error, ErrorKind};
 
@@ -17,7 +18,7 @@ fn parse_date(line: &str) -> Result<String, Error> {
     Ok(date)
 }
 
-fn parse_list(line: &str) -> Result<(u8, u8, String), Error> {
+fn parse_list(line: &str) -> Result<(u32, u32, String), Error> {
     let list_re = Regex::new(r"^\b(\d{2})\b\s*:\s*\b(\d{2})\s(.+)\s*$").unwrap();
 
     let Some((_, [hour, minute, name])) = list_re.captures(line).map(|caps| caps.extract()) else {
@@ -28,10 +29,9 @@ fn parse_list(line: &str) -> Result<(u8, u8, String), Error> {
         return Err(err);
     };
 
-    let hour = hour.parse::<u8>().expect("Invalid hour");
-    let minute = minute.parse::<u8>().expect("Invalid minute");
+    let hour: u32 = hour.parse().expect("Invalid hour");
+    let minute: u32 = minute.parse().expect("Invalid minute");
     let name = name.trim();
-    assert!(hour < 24, "{hour}");
     assert!(minute < 60, "{minute}");
     assert!(!name.is_empty(), "{name}");
     Ok((hour, minute, name.to_string()))
@@ -63,16 +63,47 @@ pub fn parse_content(contents: &str, programs: &mut Vec<Program>) -> Result<bool
                     }
                 }
             }
-            line => match parse_list(line) {
-                Ok((hour, minute, name)) => {
-                    let item = Item::new(hour, minute, name);
-                    program.add_item(item);
+            line => {
+                let mut items: Vec<Item> = vec![];
+                match parse_list(line) {
+                    Ok((hour, minute, name)) => {
+                        let item = Item::new(hour, minute, name);
+                        items.push(item);
+                        // program.add_item(item);
+                    }
+                    Err(err) => {
+                        println!("{}: 解析出错：\n{}", lineno, err);
+                        ret = false;
+                    }
                 }
-                Err(err) => {
-                    println!("{}: 解析出错：\n{}", lineno, err);
-                    ret = false;
+                for item in items {
+                    let hour = item.hour();
+                    let minute = item.minute();
+                    let name = item.name();
+                    assert!(hour < 48, "{hour}");
+                    if hour < 24 {
+                        program.add_item(item);
+                    } else {
+                        let hour = hour - 24;
+                        let Some(time) = NaiveTime::from_hms_opt(hour, minute, 0) else {
+                            println!("{}: 解析出错：\n", lineno);
+                            return Ok(false);
+                        };
+                        let datetime = program.date().and_time(time);
+                        let datetime = datetime + TimeDelta::days(1);
+
+                        programs.push(program.clone());
+                        program = Program::default();
+                        let year = datetime.year();
+                        let month = datetime.month();
+                        let day = datetime.day();
+                        let item = Item::new(hour, minute, name);
+                        let _ = program
+                            .set_date(format!("{:0>4}/{:0>2}/{:0>2}", year, month, day).as_str());
+                        program.add_item(item);
+                    }
                 }
-            },
+            }
         }
     }
     programs.push(program);

@@ -2,19 +2,31 @@ use chrono::prelude::*;
 
 #[derive(Clone, Debug)]
 pub struct Item {
-    hour: u8,
-    minute: u8,
+    hour: u32,
+    minute: u32,
     name: String,
 }
 
 impl Item {
-    pub fn new(hour: u8, minute: u8, name: String) -> Self {
+    pub fn new(hour: u32, minute: u32, name: String) -> Self {
         Self { hour, minute, name }
     }
 
     pub fn get_info(&self) -> (String, String) {
         let time = format!("{:0>2}:{:0>2}", self.hour, self.minute);
         (time, self.name.clone())
+    }
+
+    pub fn hour(&self) -> u32 {
+        self.hour
+    }
+
+    pub fn minute(&self) -> u32 {
+        self.minute
+    }
+
+    pub fn name(&self) -> String {
+        self.name.clone()
     }
 }
 
@@ -25,6 +37,9 @@ pub struct Program {
 }
 
 impl Program {
+    pub fn date(&self) -> NaiveDate {
+        self.date
+    }
     pub fn get_date(&self) -> String {
         self.date.to_string()
     }
