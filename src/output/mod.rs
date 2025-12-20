@@ -1,3 +1,3 @@
 mod xlsx;
 
-pub use xlsx::{write, write_single};
+pub use xlsx::write_map;

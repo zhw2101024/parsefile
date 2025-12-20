@@ -1,14 +1,9 @@
-use parsefile_lib::{MyError, Program};
-use parsefile_lib::{parse_file, write_single};
+use parsefile_lib::MyError;
+use parsefile_lib::{parse_file, write_map};
 
 fn handle(path: &str) -> Result<bool, MyError> {
-    let mut programs: Vec<Program> = vec![];
-    let parsed = parse_file(path, &mut programs)?;
-    let ret = if parsed {
-        write_single(&programs)?
-    } else {
-        false
-    };
+    let record_map = parse_file(path)?;
+    let ret = write_map(record_map)?;
     Ok(ret)
 }
 

@@ -1,5 +1,4 @@
 use crate::{Item, Program};
-use chrono::{Datelike, NaiveTime, TimeDelta};
 use regex::Regex;
 use std::io::{Error, ErrorKind};
 
@@ -18,7 +17,7 @@ fn parse_date(line: &str) -> Result<String, Error> {
     Ok(date)
 }
 
-fn parse_list(line: &str) -> Result<(u32, u32, String), Error> {
+fn parse_list(line: &str) -> Result<(u32, u32, &str), Error> {
     let list_re = Regex::new(r"^\b(\d{2})\b\s*:\s*\b(\d{2})\s(.+)\s*$").unwrap();
 
     let Some((_, [hour, minute, name])) = list_re.captures(line).map(|caps| caps.extract()) else {
@@ -34,10 +33,13 @@ fn parse_list(line: &str) -> Result<(u32, u32, String), Error> {
     let name = name.trim();
     assert!(minute < 60, "{minute}");
     assert!(!name.is_empty(), "{name}");
-    Ok((hour, minute, name.to_string()))
+    Ok((hour, minute, name))
 }
 
-pub fn parse_content(contents: &str, programs: &mut Vec<Program>) -> Result<bool, Error> {
+pub fn parse_content<'a>(
+    contents: &'a str,
+    programs: &mut Vec<Program<'a>>,
+) -> Result<bool, Error> {
     let mut ret = true;
     let mut program = Program::default();
 
@@ -63,47 +65,16 @@ pub fn parse_content(contents: &str, programs: &mut Vec<Program>) -> Result<bool
                     }
                 }
             }
-            line => {
-                let mut items: Vec<Item> = vec![];
-                match parse_list(line) {
-                    Ok((hour, minute, name)) => {
-                        let item = Item::new(hour, minute, name);
-                        items.push(item);
-                        // program.add_item(item);
-                    }
-                    Err(err) => {
-                        println!("{}: 解析出错：\n{}", lineno, err);
-                        ret = false;
-                    }
+            line => match parse_list(line) {
+                Ok((hour, minute, name)) => {
+                    let item = Item::new(hour, minute, name);
+                    program.add_item(item);
                 }
-                for item in items {
-                    let hour = item.hour();
-                    let minute = item.minute();
-                    let name = item.name();
-                    assert!(hour < 48, "{hour}");
-                    if hour < 24 {
-                        program.add_item(item);
-                    } else {
-                        let hour = hour - 24;
-                        let Some(time) = NaiveTime::from_hms_opt(hour, minute, 0) else {
-                            println!("{}: 解析出错：\n", lineno);
-                            return Ok(false);
-                        };
-                        let datetime = program.date().and_time(time);
-                        let datetime = datetime + TimeDelta::days(1);
-
-                        programs.push(program.clone());
-                        program = Program::default();
-                        let year = datetime.year();
-                        let month = datetime.month();
-                        let day = datetime.day();
-                        let item = Item::new(hour, minute, name);
-                        let _ = program
-                            .set_date(format!("{:0>4}/{:0>2}/{:0>2}", year, month, day).as_str());
-                        program.add_item(item);
-                    }
+                Err(err) => {
+                    println!("{}: 解析出错：\n{}", lineno, err);
+                    ret = false;
                 }
-            }
+            },
         }
     }
     programs.push(program);
@@ -130,32 +101,20 @@ mod tests {
 
     #[test]
     fn test_parse_list() {
-        assert_eq!(
-            parse_list("05:30 节目预告").unwrap(),
-            (05, 30, "节目预告".to_string())
-        );
+        assert_eq!(parse_list("05:30 节目预告").unwrap(), (05, 30, "节目预告"));
 
-        assert_eq!(
-            parse_list("05: 30 节目预告").unwrap(),
-            (05, 30, "节目预告".to_string())
-        );
+        assert_eq!(parse_list("05: 30 节目预告").unwrap(), (05, 30, "节目预告"));
     }
 
     #[test]
     #[should_panic]
     fn test_parse_list_nospace() {
-        assert_eq!(
-            parse_list("05:30节目预告").unwrap(),
-            (05, 30, "节目预告".to_string())
-        );
+        assert_eq!(parse_list("05:30节目预告").unwrap(), (05, 30, "节目预告"));
     }
 
     #[test]
     #[should_panic]
     fn test_parse_list_invalid() {
-        assert_eq!(
-            parse_list("05:303 节目预告").unwrap(),
-            (05, 30, "节目预告".to_string())
-        );
+        assert_eq!(parse_list("05:303 节目预告").unwrap(), (05, 30, "节目预告"));
     }
 }

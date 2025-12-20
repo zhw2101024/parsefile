@@ -4,6 +4,6 @@ pub mod parser;
 pub mod program;
 
 pub use error::MyError;
-pub use output::{write, write_single};
+pub use output::write_map;
 pub use parser::parse_file;
-pub use program::{Item, Program};
+pub use program::{Item, Program, Record};

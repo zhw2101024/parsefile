@@ -1,20 +1,17 @@
+use crate::{MyError, Record};
+use chrono::TimeDelta;
 use chrono::prelude::*;
 
 #[derive(Clone, Debug)]
-pub struct Item {
+pub struct Item<'a> {
     hour: u32,
     minute: u32,
-    name: String,
+    name: &'a str,
 }
 
-impl Item {
-    pub fn new(hour: u32, minute: u32, name: String) -> Self {
+impl<'a> Item<'a> {
+    pub fn new(hour: u32, minute: u32, name: &'a str) -> Self {
         Self { hour, minute, name }
-    }
-
-    pub fn get_info(&self) -> (String, String) {
-        let time = format!("{:0>2}:{:0>2}", self.hour, self.minute);
-        (time, self.name.clone())
     }
 
     pub fn hour(&self) -> u32 {
@@ -25,27 +22,20 @@ impl Item {
         self.minute
     }
 
-    pub fn name(&self) -> String {
-        self.name.clone()
+    pub fn name(&self) -> &str {
+        self.name
     }
 }
 
 #[derive(Clone, Debug, Default)]
-pub struct Program {
+pub struct Program<'a> {
     date: chrono::NaiveDate,
-    items: Vec<Item>,
+    items: Vec<Item<'a>>,
 }
 
-impl Program {
+impl<'a> Program<'a> {
     pub fn date(&self) -> NaiveDate {
         self.date
-    }
-    pub fn get_date(&self) -> String {
-        self.date.to_string()
-    }
-
-    pub fn get_items(&self) -> &Vec<Item> {
-        &self.items
     }
 
     pub fn empty(&self) -> bool {
@@ -57,7 +47,45 @@ impl Program {
         Ok(())
     }
 
-    pub fn add_item(&mut self, item: Item) {
+    pub fn add_item(&mut self, item: Item<'a>) {
         self.items.push(item);
+    }
+
+    pub fn records(&self) -> Result<Vec<Record>, MyError> {
+        let mut records: Vec<Record> = vec![];
+        for Item { hour, minute, name } in &self.items {
+            /*
+            let name = temp.name().to_string();
+            let hour = temp.hour();
+            let minute = temp.minute();
+            */
+            assert!(*hour < 48, "{hour}");
+
+            let date;
+            let time = if *hour < 24 {
+                date = self.date.to_string();
+                format!("{} {:0>2}:{:0>2}", self.date, hour, minute)
+            } else {
+                let hour = hour - 24;
+                let Some(time) = NaiveTime::from_hms_opt(hour, *minute, 0) else {
+                    let error = MyError::IoError(std::io::Error::new(
+                        std::io::ErrorKind::InvalidData,
+                        format!("无效时间： {}:{}", hour, minute),
+                    ));
+                    return Err(error);
+                };
+                let datetime = self.date().and_time(time);
+                let datetime = datetime + TimeDelta::days(1);
+
+                let year = datetime.year();
+                let month = datetime.month();
+                let day = datetime.day();
+                date = format!("{year}-{month}-{day}");
+                format!("{year}-{month}-{day} {:0>2}:{:0>2}", hour, minute)
+            };
+
+            records.push(Record::new(name.to_string(), date, time));
+        }
+        Ok(records)
     }
 }
