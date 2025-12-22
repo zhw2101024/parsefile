@@ -29,6 +29,9 @@ fn main() {
             MyError::XlsxError(xlsx_error) => {
                 println!("xlsx error:\n{}", xlsx_error);
             }
+            MyError::LineError(line_error) => {
+                println!("line error:\n{}", line_error);
+            }
         },
     }
 }
