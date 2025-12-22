@@ -1,9 +1,14 @@
+mod line_error;
+
+pub use line_error::LineError;
+
 #[derive(Debug)]
 pub enum MyError {
     IoError(std::io::Error),
     Utf8Error(core::str::Utf8Error),
     ParseError(chrono::ParseError),
     XlsxError(rust_xlsxwriter::XlsxError),
+    LineError(LineError),
 }
 
 impl MyError {}
@@ -29,5 +34,11 @@ impl From<chrono::ParseError> for MyError {
 impl From<rust_xlsxwriter::XlsxError> for MyError {
     fn from(value: rust_xlsxwriter::XlsxError) -> Self {
         MyError::XlsxError(value)
+    }
+}
+
+impl From<LineError> for MyError {
+    fn from(value: LineError) -> Self {
+        MyError::LineError(value)
     }
 }

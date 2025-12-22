@@ -1,4 +1,4 @@
-use crate::{Item, Program};
+use crate::{Item, LineError, Program};
 use regex::Regex;
 use std::io::{Error, ErrorKind};
 
@@ -57,12 +57,9 @@ pub fn parse_content<'a>(
 
                 let date = parse_date(line).unwrap_or("".to_string());
 
-                match program.set_date(date.as_str()) {
-                    Ok(_) => {}
-                    Err(err) => {
-                        println!("{}: 解析出错：\n  {}, detail:\n  {}", lineno, line, err);
-                        ret = false;
-                    }
+                if program.set_date(&date).is_err() {
+                    eprintln!("{}", LineError::new(lineno, line.to_string()));
+                    ret = false;
                 }
             }
             line => match parse_list(line) {
@@ -70,8 +67,8 @@ pub fn parse_content<'a>(
                     let item = Item::new(hour, minute, name);
                     program.add_item(item);
                 }
-                Err(err) => {
-                    println!("{}: 解析出错：\n{}", lineno, err);
+                Err(_err) => {
+                    eprintln!("{}", LineError::new(lineno, line.to_string()));
                     ret = false;
                 }
             },
