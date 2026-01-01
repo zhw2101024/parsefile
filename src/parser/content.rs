@@ -3,7 +3,7 @@ use regex::Regex;
 use std::io::{Error, ErrorKind};
 
 fn parse_date(line: &str) -> Result<String, Error> {
-    let date_re = Regex::new(r"^\b播出日期\s*(\d{4}).*(\d{2}).*(\d{2})$").unwrap();
+    let date_re = Regex::new(r"^\b播出日期\s*(\d{4})/\s*(\d{1,2})\s*/\s*(\d{1,2})\s*$").unwrap();
 
     let Some((_, [year, month, day])) = date_re.captures(line).map(|caps| caps.extract()) else {
         let err = Error::new(
@@ -12,7 +12,7 @@ fn parse_date(line: &str) -> Result<String, Error> {
         );
         return Err(err);
     };
-    let date = [year, month, day].join("/");
+    let date = format!("{}/{:0>2}/{:0>2}", year, month, day);
 
     Ok(date)
 }

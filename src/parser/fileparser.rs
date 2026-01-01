@@ -14,17 +14,21 @@ pub fn parse_file(path: &str) -> Result<bool, MyError> {
     let mut reader: Vec<u8> = Vec::new();
     fh.read_to_end(&mut reader).expect("Could not read file");
     let (encode, _confidence, _language) = detect(&reader);
-    let Some(coder) = encoding_from_whatwg_label(charset2encoding(&encode)) else {
-        let err = std::io::Error::new(
-            std::io::ErrorKind::InvalidData,
-            format!("cannot detect the encoding from label: {}", encode),
-        );
-        return Err(MyError::IoError(err));
+    let contents = if encode.ne("utf-8") {
+        let Some(coder) = encoding_from_whatwg_label(charset2encoding(&encode)) else {
+            let err = std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                format!("cannot detect the encoding from label: {}", encode),
+            );
+            return Err(MyError::IoError(err));
+        };
+        coder
+            .decode(&reader, DecoderTrap::Strict)
+            .expect("Error")
+            .replace("：", ":")
+    } else {
+        String::from_utf8(reader).unwrap()
     };
-    let contents = coder
-        .decode(&reader, DecoderTrap::Ignore)
-        .expect("Error")
-        .replace("：", ":");
 
     let mut programs: Vec<Program> = vec![];
     let _ = parse_content(&contents, &mut programs)?;

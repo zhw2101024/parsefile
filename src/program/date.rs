@@ -54,11 +54,6 @@ impl<'a> Program<'a> {
     pub fn records(&self) -> Result<Vec<Record>, MyError> {
         let mut records: Vec<Record> = vec![];
         for Item { hour, minute, name } in &self.items {
-            /*
-            let name = temp.name().to_string();
-            let hour = temp.hour();
-            let minute = temp.minute();
-            */
             assert!(*hour < 48, "{hour}");
 
             let date;
@@ -80,8 +75,11 @@ impl<'a> Program<'a> {
                 let year = datetime.year();
                 let month = datetime.month();
                 let day = datetime.day();
-                date = format!("{year}-{month}-{day}");
-                format!("{year}-{month}-{day} {:0>2}:{:0>2}", hour, minute)
+                date = format!("{year}-{:0>2}-{:0>2}", month, day);
+                format!(
+                    "{year}-{:0>2}-{:0>2} {:0>2}:{:0>2}",
+                    month, day, hour, minute
+                )
             };
 
             records.push(Record::new(name.to_string(), date, time));
