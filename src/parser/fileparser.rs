@@ -1,9 +1,9 @@
 use std::collections::BTreeMap;
 
 use super::parse_content;
-use crate::{MyError, Program, Record};
+use crate::{MyError, Program, Record, write_map};
 
-pub fn parse_file(path: &str) -> Result<BTreeMap<String, Vec<Record>>, MyError> {
+pub fn parse_file(path: &str) -> Result<bool, MyError> {
     let contents = std::fs::read_to_string(path)?;
 
     let mut programs: Vec<Program> = vec![];
@@ -24,5 +24,5 @@ pub fn parse_file(path: &str) -> Result<BTreeMap<String, Vec<Record>>, MyError> 
             };
         }
     }
-    Ok(record_map)
+    write_map(&record_map, path)
 }

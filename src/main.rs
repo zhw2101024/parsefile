@@ -1,14 +1,8 @@
 use parsefile_lib::MyError;
-use parsefile_lib::{parse_file, write_map};
-
-fn handle(path: &str) -> Result<bool, MyError> {
-    let record_map = parse_file(path)?;
-    let ret = write_map(record_map)?;
-    Ok(ret)
-}
+use parsefile_lib::parse_file;
 
 fn main() {
-    match handle("1.txt") {
+    match parse_file("1.txt") {
         Ok(succeed) => {
             if succeed {
                 println!("Success!");
