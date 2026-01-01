@@ -1,10 +1,30 @@
-use std::collections::BTreeMap;
+use chardet::{charset2encoding, detect};
+use encoding::DecoderTrap;
+use encoding::label::encoding_from_whatwg_label;
+use std::{collections::BTreeMap, fs::OpenOptions, io::Read};
 
 use super::parse_content;
 use crate::{MyError, Program, Record, write_map};
 
 pub fn parse_file(path: &str) -> Result<bool, MyError> {
-    let contents = std::fs::read_to_string(path)?;
+    let mut fh = OpenOptions::new()
+        .read(true)
+        .open(path)
+        .expect("Could not open file");
+    let mut reader: Vec<u8> = Vec::new();
+    fh.read_to_end(&mut reader).expect("Could not read file");
+    let (encode, _confidence, _language) = detect(&reader);
+    let Some(coder) = encoding_from_whatwg_label(charset2encoding(&encode)) else {
+        let err = std::io::Error::new(
+            std::io::ErrorKind::InvalidData,
+            format!("cannot detect the encoding from label: {}", encode),
+        );
+        return Err(MyError::IoError(err));
+    };
+    let contents = coder
+        .decode(&reader, DecoderTrap::Ignore)
+        .expect("Error")
+        .replace("：", ":");
 
     let mut programs: Vec<Program> = vec![];
     let _ = parse_content(&contents, &mut programs)?;
@@ -25,4 +45,16 @@ pub fn parse_file(path: &str) -> Result<bool, MyError> {
         }
     }
     write_map(&record_map, path)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_file() {
+        assert!(parse_file("1.txt").unwrap());
+        assert!(parse_file("2.txt").unwrap());
+        assert!(parse_file("3.txt").unwrap());
+    }
 }
