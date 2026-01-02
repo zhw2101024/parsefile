@@ -1,7 +1,9 @@
 use parsefile_lib::MyError;
+use parsefile_lib::monitor;
 use parsefile_lib::parse_file;
 
 fn main() {
+    monitor();
     match parse_file("1.txt") {
         Ok(succeed) => {
             if succeed {
