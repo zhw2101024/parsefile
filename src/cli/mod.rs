@@ -1,0 +1,25 @@
+use crate::{ConcreteSubject, Observer, Subject};
+
+pub struct ConcreteObserver {
+    name: String,
+}
+impl ConcreteObserver {
+    pub fn new<S: Into<String>>(name: S) -> Self {
+        Self { name: name.into() }
+    }
+}
+impl Observer for ConcreteObserver {
+    fn get_name(&self) -> &str {
+        &self.name
+    }
+    fn update(&self, message: &str) -> String {
+        let msg = format!("{} received message: {}", self.name, message);
+        println!("{msg}");
+        msg
+    }
+}
+
+pub fn add_observer(subject: &mut ConcreteSubject, name: &str) {
+    let observer = Box::new(ConcreteObserver::new(name));
+    subject.attach(observer);
+}
