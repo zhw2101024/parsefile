@@ -2,9 +2,12 @@ use parsefile_lib::MyError;
 use parsefile_lib::monitor;
 use parsefile_lib::parse_file;
 
+use std::path::Path;
+
 fn main() {
     monitor();
-    match parse_file("1.txt") {
+    let path = Path::new("1.txt");
+    match parse_file(path) {
         Ok(succeed) => {
             if succeed {
                 println!("Success!");
