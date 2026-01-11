@@ -1,8 +1,8 @@
 #[derive(Clone, Debug)]
 pub struct Record {
-    name: String,
+    pub name: String,
     date: String,
-    time: String,
+    pub time: String,
 }
 
 impl Record {
@@ -10,15 +10,7 @@ impl Record {
         Record { name, date, time }
     }
 
-    pub fn name(&self) -> &str {
-        &self.name
-    }
-
     pub fn date(&self) -> &str {
         &self.date
-    }
-
-    pub fn time(&self) -> &str {
-        &self.time
     }
 }
