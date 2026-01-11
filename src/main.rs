@@ -8,12 +8,8 @@ fn main() {
     monitor();
     let path = Path::new("1.txt");
     match parse_file(path) {
-        Ok(succeed) => {
-            if succeed {
-                println!("Success!");
-            } else {
-                println!("Failed!");
-            }
+        Ok(number) => {
+            println!("passed {} records", number);
         }
         Err(e) => match e {
             MyError::IoError(error) => {

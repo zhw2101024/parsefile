@@ -6,7 +6,7 @@ use std::{collections::BTreeMap, fs::OpenOptions, io::Read, path::Path};
 use super::parse_content;
 use crate::{MyError, Program, Record, write_map};
 
-pub fn parse_file(path: &Path) -> Result<bool, MyError> {
+pub fn parse_file(path: &Path) -> Result<i32, MyError> {
     let mut fh = OpenOptions::new()
         .read(true)
         .open(path)
@@ -57,8 +57,8 @@ mod tests {
 
     #[test]
     fn test_parse_file() {
-        assert!(parse_file(Path::new("1.txt")).unwrap());
-        assert!(parse_file(Path::new("2.txt")).unwrap());
-        assert!(parse_file(Path::new("3.txt")).unwrap());
+        assert!(parse_file(Path::new("1.txt")).is_ok());
+        assert!(parse_file(Path::new("2.txt")).is_ok());
+        assert!(parse_file(Path::new("3.txt")).is_ok());
     }
 }
