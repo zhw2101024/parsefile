@@ -66,12 +66,9 @@ pub fn parse_content<'a>(
 
                 let date = parse_date(line).unwrap_or("".to_string());
 
-                match program.set_date(&date) {
-                    Ok(_) => {}
-                    Err(_err) => {
-                        println!("{}", LineError::new(lineno, line.to_string()));
-                        ret = false;
-                    }
+                if program.set_date(&date).is_err() {
+                    println!("{}", LineError::new(lineno, line.to_string()));
+                    ret = false;
                 }
             }
             line => match parse_list(line) {
