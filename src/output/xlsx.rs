@@ -14,10 +14,10 @@ pub fn write_map(record_map: &BTreeMap<String, Vec<Record>>, path: &Path) -> Res
 
     let mut row_index = 1;
 
-    for (_date, records) in record_map.iter() {
-        for record in records {
-            worksheet.write(row_index, 0, record.name())?;
-            worksheet.write(row_index, 1, record.time())?;
+    for records in record_map.values() {
+        for Record { name, time, .. } in records {
+            worksheet.write(row_index, 0, name)?;
+            worksheet.write(row_index, 1, time)?;
             row_index += 1;
 
             number += 1;
