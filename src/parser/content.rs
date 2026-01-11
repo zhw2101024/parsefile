@@ -76,8 +76,9 @@ pub fn parse_content<'a>(
                     let item = Item::new(hour, minute, name);
                     program.add_item(item);
                 }
-                Err(_err) => {
+                Err(err) => {
                     eprintln!("{}", LineError::new(lineno, line.to_string()));
+                    eprintln!("error: {}", err);
                     ret = false;
                 }
             },
