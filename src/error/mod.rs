@@ -1,5 +1,8 @@
 mod line_error;
 
+use std::fmt;
+use std::fmt::Display;
+
 pub use line_error::LineError;
 
 #[derive(Debug)]
@@ -40,5 +43,17 @@ impl From<rust_xlsxwriter::XlsxError> for MyError {
 impl From<LineError> for MyError {
     fn from(value: LineError) -> Self {
         MyError::LineError(value)
+    }
+}
+
+impl Display for MyError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            MyError::IoError(err) => write!(f, "io error:\n{}", err),
+            MyError::LineError(err) => write!(f, "utf8 error:\n{}", err),
+            MyError::ParseError(err) => write!(f, "parse error:\n{}", err),
+            MyError::Utf8Error(err) => write!(f, "utf8 error:\n{}", err),
+            MyError::XlsxError(err) => write!(f, "xlsx error:\n{}", err),
+        }
     }
 }
