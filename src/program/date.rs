@@ -13,18 +13,6 @@ impl<'a> Item<'a> {
     pub fn new(hour: u32, minute: u32, name: &'a str) -> Self {
         Self { hour, minute, name }
     }
-
-    pub fn hour(&self) -> u32 {
-        self.hour
-    }
-
-    pub fn minute(&self) -> u32 {
-        self.minute
-    }
-
-    pub fn name(&self) -> &str {
-        self.name
-    }
 }
 
 #[derive(Clone, Debug, Default)]
