@@ -2,8 +2,8 @@ use crate::{MyError, Record};
 use rust_xlsxwriter::Workbook;
 use std::{collections::BTreeMap, path::Path};
 
-pub fn write_map(record_map: &BTreeMap<String, Vec<Record>>, path: &Path) -> Result<bool, MyError> {
-    let ret = true;
+pub fn write_map(record_map: &BTreeMap<String, Vec<Record>>, path: &Path) -> Result<i32, MyError> {
+    let mut number = 0;
 
     let mut workbook = Workbook::new();
 
@@ -19,6 +19,8 @@ pub fn write_map(record_map: &BTreeMap<String, Vec<Record>>, path: &Path) -> Res
             worksheet.write(row_index, 0, record.name())?;
             worksheet.write(row_index, 1, record.time())?;
             row_index += 1;
+
+            number += 1;
         }
     }
 
@@ -35,5 +37,5 @@ pub fn write_map(record_map: &BTreeMap<String, Vec<Record>>, path: &Path) -> Res
     let destpath = parent.join(destname);
     workbook.save(destpath)?;
 
-    Ok(ret)
+    Ok(number)
 }
