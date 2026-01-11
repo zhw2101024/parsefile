@@ -37,7 +37,7 @@ pub fn parse_file(path: &Path) -> Result<i32, MyError> {
         for record in program.records()? {
             let program_date = program.date().to_string();
             let date = if program_date.eq(record.date()) {
-                program_date.as_str()
+                &program_date
             } else {
                 record.date()
             };
