@@ -28,8 +28,17 @@ fn parse_list(line: &str) -> Result<(u32, u32, &str), Error> {
         return Err(err);
     };
 
-    let hour: u32 = hour.parse().expect("Invalid hour");
-    let minute: u32 = minute.parse().expect("Invalid minute");
+    let Some(hour) = hour.parse::<u32>().ok() else {
+        let err = Error::new(ErrorKind::InvalidData, format!("Invalid hour: {}", hour));
+        return Err(err);
+    };
+    let Some(minute) = minute.parse::<u32>().ok() else {
+        let err = Error::new(
+            ErrorKind::InvalidData,
+            format!("Invalid minute: {}", minute),
+        );
+        return Err(err);
+    };
     let name = name.trim();
     assert!(minute < 60, "{minute}");
     assert!(!name.is_empty(), "{name}");

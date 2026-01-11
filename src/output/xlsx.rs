@@ -24,17 +24,9 @@ pub fn write_map(record_map: &BTreeMap<String, Vec<Record>>, path: &Path) -> Res
         }
     }
 
-    let parent = path
-        .parent()
-        .unwrap_or_else(|| panic!("unable to get parent for path: {}", path.to_string_lossy()));
-    let prefix_os = path
-        .file_prefix()
-        .unwrap_or_else(|| panic!("unable to get prefix for path: {}", path.to_string_lossy()));
-    let prefix = prefix_os
-        .to_str()
-        .unwrap_or_else(|| panic!("{}", prefix_os.display().to_string()));
-    let destname = format!("{}.xlsx", prefix);
-    let destpath = parent.join(destname);
+    let mut destpath = path.to_path_buf();
+    destpath.set_extension("xlsx");
+
     workbook.save(destpath)?;
 
     Ok(number)
