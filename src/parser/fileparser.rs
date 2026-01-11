@@ -10,9 +10,11 @@ pub fn parse_file(path: &Path) -> Result<i32, MyError> {
     let mut fh = OpenOptions::new()
         .read(true)
         .open(path)
-        .expect("Could not open file");
+        .inspect_err(|_| eprintln!("Could not open file {}", path.to_string_lossy()))?;
     let mut reader: Vec<u8> = Vec::new();
-    fh.read_to_end(&mut reader).expect("Could not read file");
+    fh.read_to_end(&mut reader)
+        .inspect(|number| println!("{} bytes read from {}", number, path.to_string_lossy()))
+        .inspect_err(|_| eprintln!("Could not read file {}", path.to_string_lossy()))?;
     let (encode, _confidence, _language) = detect(&reader);
     let contents = if encode.ne("utf-8") {
         let Some(coder) = encoding_from_whatwg_label(charset2encoding(&encode)) else {
@@ -22,12 +24,26 @@ pub fn parse_file(path: &Path) -> Result<i32, MyError> {
             );
             return Err(MyError::IoError(err));
         };
-        coder
-            .decode(&reader, DecoderTrap::Strict)
-            .expect("Error")
-            .replace("：", ":")
+        let Some(contents) = coder.decode(&reader, DecoderTrap::Strict).ok() else {
+            let err = std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                format!(
+                    "cannot decode the content of {} to encode {}",
+                    path.to_string_lossy(),
+                    encode
+                ),
+            );
+            return Err(MyError::IoError(err));
+        };
+        contents.replace("：", ":")
     } else {
-        String::from_utf8(reader).unwrap()
+        let Some(contents) = String::from_utf8(reader).ok() else {
+            return Err(MyError::IoError(std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                format!("invalid utf8 content: {}", path.to_string_lossy()),
+            )));
+        };
+        contents
     };
 
     let mut programs: Vec<Program> = vec![];
