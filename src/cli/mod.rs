@@ -1,4 +1,7 @@
 use crate::{ConcreteSubject, Observer, Subject};
+use std::cell::LazyCell;
+
+pub static mut SUBJECT: LazyCell<ConcreteSubject> = LazyCell::new(ConcreteSubject::default);
 
 pub struct ConcreteObserver {
     name: String,

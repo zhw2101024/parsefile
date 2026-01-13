@@ -1,4 +1,4 @@
-use crate::{Item, LineError, Program};
+use crate::{Item, LineError, Program, notify};
 use regex::Regex;
 use std::io::{Error, ErrorKind};
 
@@ -67,7 +67,8 @@ pub fn parse_content<'a>(
                 let date = parse_date(line).unwrap_or("".to_string());
 
                 if program.set_date(&date).is_err() {
-                    eprintln!("{}", LineError::new(lineno, line.to_string()));
+                    notify(&format!("{}", LineError::new(lineno, line.to_string())));
+
                     ret = false;
                 }
             }
