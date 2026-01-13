@@ -1,13 +1,10 @@
-use parsefile_lib::{ConcreteSubject, Subject};
-use parsefile_lib::{add_observer, parse_file};
+use parsefile_lib::init_subject;
+use parsefile_lib::parse_file;
 
 use std::path::Path;
 
 fn main() {
-    let subject: &mut ConcreteSubject = &mut ConcreteSubject::default();
-    add_observer(subject, "init");
-
-    subject.notify("Hello, observers!");
+    init_subject();
 
     let path = Path::new("1.txt");
     match parse_file(path) {
