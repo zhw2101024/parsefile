@@ -1,3 +1,3 @@
-mod simple;
+mod hard;
 
-pub use simple::hello;
+pub use hard::hello;
