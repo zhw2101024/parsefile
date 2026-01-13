@@ -4,8 +4,10 @@ pub mod message;
 pub mod output;
 pub mod parser;
 pub mod program;
+pub mod ui;
 
 pub use parser::parse_file;
+pub use ui::hello;
 
 use message::{ConcreteSubject, Observer, Subject};
 
