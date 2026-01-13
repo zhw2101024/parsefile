@@ -1,7 +1,10 @@
-use parsefile_lib::init_subject;
-use parsefile_lib::parse_file;
+mod ui;
+
+use parsefile_lib::{init_subject, parse_file};
 
 use std::path::Path;
+
+use ui::hello;
 
 fn main() {
     init_subject();
@@ -13,4 +16,6 @@ fn main() {
         }
         Err(e) => eprintln!("{}", e),
     }
+
+    hello();
 }
