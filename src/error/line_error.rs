@@ -23,6 +23,6 @@ impl LineError {
 
 impl Display for LineError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}: unable to read line\n{}", self.lineno(), self.line())
+        write!(f, "{}: 无法处理行数据\n{}", self.lineno(), self.line())
     }
 }
