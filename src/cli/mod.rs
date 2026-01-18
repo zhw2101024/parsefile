@@ -17,7 +17,6 @@ impl Observer for ConcreteObserver {
     }
     fn update(&self, message: &str) -> String {
         let msg = format!("{} received message: {}", self.name, message);
-        println!("{msg}");
         msg
     }
 }
