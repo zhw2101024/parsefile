@@ -18,7 +18,7 @@ fn parse_date(line: &str) -> Result<String, Error> {
 }
 
 fn parse_list(line: &str) -> Result<(u32, u32, &str), Error> {
-    let list_re = Regex::new(r"^\b(\d{2})\b\s*:\s*\b(\d{2})\s*(.+)\s*$").unwrap();
+    let list_re = Regex::new(r"^\s*\b(\d{2})\b\s*:\s*\b(\d{2})\s*(.+)\s*$").unwrap();
 
     let Some((_, [hour, minute, name])) = list_re.captures(line).map(|caps| caps.extract()) else {
         let err = Error::new(
@@ -106,6 +106,11 @@ mod tests {
     fn test_parse_list() {
         assert_eq!(parse_list("05:30 节目预告").unwrap(), (05, 30, "节目预告"));
         assert_eq!(parse_list("05: 30 节目预告").unwrap(), (05, 30, "节目预告"));
+        assert_eq!(parse_list(" 05:30 节目预告").unwrap(), (05, 30, "节目预告"));
+        assert_eq!(
+            parse_list(" 05: 30 节目预告").unwrap(),
+            (05, 30, "节目预告")
+        );
         assert_eq!(parse_list("05:30节目预告").unwrap(), (05, 30, "节目预告"));
     }
 
