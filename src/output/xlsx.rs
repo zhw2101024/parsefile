@@ -11,6 +11,8 @@ pub fn write_map(record_map: &BTreeMap<String, Vec<Record>>, path: &Path) -> Res
 
     worksheet.write(0, 0, "节目名称")?;
     worksheet.write(0, 1, "节目时间")?;
+    worksheet.write(0, 2, "是否允许直播")?;
+    worksheet.write(0, 3, "是否允许回放")?;
 
     let mut row_index = 1;
 
@@ -18,6 +20,8 @@ pub fn write_map(record_map: &BTreeMap<String, Vec<Record>>, path: &Path) -> Res
         for Record { name, time, .. } in records {
             worksheet.write(row_index, 0, name)?;
             worksheet.write(row_index, 1, time)?;
+            worksheet.write(row_index, 2, "不允许")?;
+            worksheet.write(row_index, 3, "不允许")?;
             row_index += 1;
 
             number += 1;
