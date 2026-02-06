@@ -89,13 +89,24 @@ impl Render for HelloWorld {
                     .items_center()
                     .justify_start()
                     .child(
-                        div().v_flex().child(
-                            Button::new("open")
-                                .primary()
-                                .m_16()
-                                .label("选择节目单")
-                                .on_click(cx.listener(Self::handle)),
-                        ),
+                        div()
+                            .flex()
+                            .child(
+                                Button::new("open")
+                                    .primary()
+                                    .m_16()
+                                    .label("选择节目单")
+                                    .on_click(cx.listener(Self::handle)),
+                            )
+                            .child(
+                                Button::new("inspect")
+                                    .primary()
+                                    .m_16()
+                                    .label("switch")
+                                    .on_click(cx.listener(|_, _, window, cx| {
+                                        window.toggle_inspector(cx);
+                                    })),
+                            ),
                     )
                     .child(
                         div()
@@ -107,12 +118,13 @@ impl Render for HelloWorld {
                             .child(
                                 div()
                                     .w_5_6()
+                                    .pr_4()
                                     .bg(blue_100())
                                     .h(AbsoluteLength::Pixels(Pixels::from(512f32)))
                                     .child(
                                         Input::new(&self.editor)
                                             .content_stretch()
-                                            .h(AbsoluteLength::Pixels(Pixels::from(1024f32)))
+                                            .h(AbsoluteLength::Pixels(Pixels::from(4096f32)))
                                             .bg(yellow_100()),
                                     )
                                     .overflow_y_scrollbar(),
