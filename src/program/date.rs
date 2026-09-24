@@ -47,7 +47,8 @@ impl<'a> Program<'a> {
             let date;
             let time = if *hour < 24 {
                 date = self.date.to_string();
-                format!("{} {:0>2}:{:0>2}", self.date, hour, minute)
+                // format!("{} {:0>2}:{:0>2}", self.date, hour, minute)
+                format!("{:0>2}:{:0>2}", hour, minute)
             } else {
                 let hour = hour - 24;
                 let Some(time) = NaiveTime::from_hms_opt(hour, *minute, 0) else {
@@ -64,9 +65,14 @@ impl<'a> Program<'a> {
                 let month = datetime.month();
                 let day = datetime.day();
                 date = format!("{year}-{:0>2}-{:0>2}", month, day);
+                /*
                 format!(
                     "{year}-{:0>2}-{:0>2} {:0>2}:{:0>2}",
                     month, day, hour, minute
+                )
+                */
+                format!(
+                    "{:0>2}:{:0>2}", hour, minute
                 )
             };
 
