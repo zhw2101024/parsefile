@@ -1,5 +1,8 @@
-use crate::{Item, LineError, Program, notify};
+use crate::MyError;
+use crate::{Item, LineError, Program};
+use chrono::{NaiveDate, TimeDelta};
 use regex::Regex;
+use std::collections::BTreeMap;
 use std::io::{Error, ErrorKind};
 
 fn parse_date(line: &str) -> Result<String, Error> {
@@ -17,7 +20,7 @@ fn parse_date(line: &str) -> Result<String, Error> {
     Ok(date)
 }
 
-fn parse_list(line: &str) -> Result<(u32, u32, &str), Error> {
+fn parse_list(source_date: String, line: &str) -> Result<(NaiveDate, u32, u32, &str), Error> {
     let list_re = Regex::new(r"^\s*\b(\d{2})\b\s*:\s*\b(\d{2})\s*(.+)\s*$").unwrap();
 
     let Some((_, [hour, minute, name])) = list_re.captures(line).map(|caps| caps.extract()) else {
@@ -28,10 +31,15 @@ fn parse_list(line: &str) -> Result<(u32, u32, &str), Error> {
         return Err(err);
     };
 
-    let Some(hour) = hour.parse::<u32>().ok() else {
+    let Some(mut hour) = hour.parse::<u32>().ok() else {
         let err = Error::new(ErrorKind::InvalidData, format!("Invalid hour: {}", hour));
         return Err(err);
     };
+    let mut item_date = NaiveDate::parse_from_str(source_date.as_str(), "%Y/%m/%d").unwrap();
+    if hour >= 24 {
+        hour -= 24;
+        item_date += TimeDelta::days(1);
+    }
     let Some(minute) = minute.parse::<u32>().ok() else {
         let err = Error::new(
             ErrorKind::InvalidData,
@@ -42,16 +50,25 @@ fn parse_list(line: &str) -> Result<(u32, u32, &str), Error> {
     let name = name.trim();
     assert!(minute < 60, "{minute}");
     assert!(!name.is_empty(), "{name}");
-    Ok((hour, minute, name))
+    Ok((item_date, hour, minute, name))
 }
 
-pub fn parse_content<'a>(
-    contents: &'a str,
-    programs: &mut Vec<Program<'a>>,
-) -> Result<bool, Error> {
-    let mut ret = true;
-    let mut program = Program::default();
+struct ProgramItem<'a> {
+    date: NaiveDate,
+    hour: u32,
+    minute: u32,
+    name: &'a str,
+    is_last: bool,
+}
 
+pub fn parse_content_map<'a>(
+    contents: &'a str,
+    program_map: &mut BTreeMap<NaiveDate, Program<'a>>,
+) -> Result<bool, MyError> {
+    let mut ret = true;
+
+    let mut temp_date = "".to_string();
+    let mut program_items: Vec<ProgramItem> = vec![];
     for (index, line) in contents.lines().enumerate() {
         let lineno = index + 1;
         let line = line.trim();
@@ -59,23 +76,21 @@ pub fn parse_content<'a>(
             line if line.is_empty() | line.starts_with("节目长度") | line.contains("频道") => {
             }
             line if line.starts_with("播出日期") => {
-                if !program.empty() {
-                    programs.push(program);
-                    program = Program::default();
+                if let Some(item) = program_items.last_mut() {
+                    item.is_last = true;
                 }
-
-                let date = parse_date(line).unwrap_or("".to_string());
-
-                if program.set_date(&date).is_err() {
-                    notify(&format!("{}", LineError::new(lineno, line.to_string())));
-
-                    ret = false;
-                }
+                temp_date = parse_date(line).unwrap_or("".to_string());
             }
-            line => match parse_list(line) {
-                Ok((hour, minute, name)) => {
-                    let item = Item::new(hour, minute, name);
-                    program.add_item(item);
+            line => match parse_list(temp_date.clone(), line) {
+                Ok((date, hour, minute, name)) => {
+                    let program_item = ProgramItem {
+                        date,
+                        hour,
+                        minute,
+                        name,
+                        is_last: false,
+                    };
+                    program_items.push(program_item);
                 }
                 Err(err) => {
                     eprintln!("{}", LineError::new(lineno, line.to_string()));
@@ -85,8 +100,30 @@ pub fn parse_content<'a>(
             },
         }
     }
-    programs.push(program);
+    if let Some(item) = program_items.last_mut() {
+        item.is_last = true;
+    }
+    for ProgramItem {
+        mut date,
+        hour,
+        minute,
+        name,
+        is_last,
+    } in program_items
+    {
+        if is_last && hour < 12 {
+            date += TimeDelta::days(1);
+        }
+        let item = Item::new(date, hour, minute, name);
 
+        if let std::collections::btree_map::Entry::Vacant(e) = program_map.entry(date) {
+            let mut program = Program::default();
+            program.add_item(item);
+            e.insert(program);
+        } else {
+            program_map.get_mut(&date).unwrap().add_item(item);
+        }
+    }
     Ok(ret)
 }
 
@@ -104,19 +141,38 @@ mod tests {
 
     #[test]
     fn test_parse_list() {
-        assert_eq!(parse_list("05:30 节目预告").unwrap(), (05, 30, "节目预告"));
-        assert_eq!(parse_list("05: 30 节目预告").unwrap(), (05, 30, "节目预告"));
-        assert_eq!(parse_list(" 05:30 节目预告").unwrap(), (05, 30, "节目预告"));
+        let date_str = "2026/11/18";
+        let date = NaiveDate::parse_from_str(date_str, "%Y/%m/%d").unwrap();
         assert_eq!(
-            parse_list(" 05: 30 节目预告").unwrap(),
-            (05, 30, "节目预告")
+            parse_list(date_str.to_string(), "05:30 节目预告").unwrap(),
+            (date, 05, 30, "节目预告")
         );
-        assert_eq!(parse_list("05:30节目预告").unwrap(), (05, 30, "节目预告"));
+        assert_eq!(
+            parse_list(date_str.to_string(), "05: 30 节目预告").unwrap(),
+            (date, 05, 30, "节目预告")
+        );
+        assert_eq!(
+            parse_list(date_str.to_string(), " 05:30 节目预告").unwrap(),
+            (date, 05, 30, "节目预告")
+        );
+        assert_eq!(
+            parse_list(date_str.to_string(), " 05: 30 节目预告").unwrap(),
+            (date, 05, 30, "节目预告")
+        );
+        assert_eq!(
+            parse_list(date_str.to_string(), "05:30节目预告").unwrap(),
+            (date, 05, 30, "节目预告")
+        );
     }
 
     #[test]
     #[should_panic]
     fn test_parse_list_invalid() {
-        assert_eq!(parse_list("05:303 节目预告").unwrap(), (05, 30, "节目预告"));
+        let date_str = "2026/11/18";
+        let date = NaiveDate::parse_from_str(date_str, "%Y/%m/%d").unwrap();
+        assert_eq!(
+            parse_list(date_str.to_string(), "05:303 节目预告").unwrap(),
+            (date, 05, 30, "节目预告")
+        );
     }
 }
