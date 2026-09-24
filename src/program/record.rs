@@ -1,7 +1,7 @@
 #[derive(Clone, Debug)]
 pub struct Record {
     pub name: String,
-    date: String,
+    pub date: String,
     pub time: String,
 }
 
