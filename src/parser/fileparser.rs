@@ -1,9 +1,10 @@
 use chardet::{charset2encoding, detect};
+use chrono::NaiveDate;
 use encoding::DecoderTrap;
 use encoding::label::encoding_from_whatwg_label;
 use std::{collections::BTreeMap, fs::OpenOptions, io::Read, path::Path};
 
-use super::parse_content;
+use super::parse_content_map;
 use crate::{MyError, Program, Record, write_map};
 
 pub fn parse_file(path: &Path) -> Result<i32, MyError> {
@@ -45,24 +46,22 @@ pub fn parse_file(path: &Path) -> Result<i32, MyError> {
         contents
     };
 
-    let mut programs: Vec<Program> = vec![];
-    let _ = parse_content(&contents, &mut programs)?;
     let mut record_map: BTreeMap<String, Vec<Record>> = BTreeMap::new();
-    for program in programs {
-        for record in program.records()? {
-            let program_date = program.date().to_string();
-            let date = if program_date.eq(record.date()) {
-                &program_date
-            } else {
-                record.date()
-            };
-            if let Some(records) = record_map.get_mut(date) {
+
+    let mut program_map: BTreeMap<NaiveDate, Program> = BTreeMap::new();
+    let _ = parse_content_map(&contents, &mut program_map)?;
+
+    for (date, program) in program_map {
+        let records = program.records()?;
+        for record in records {
+            if let Some(records) = record_map.get_mut(&date.to_string()) {
                 records.push(record);
             } else {
                 record_map.insert(record.date().to_string(), vec![record]);
             };
         }
     }
+
     write_map(&record_map, path)
 }
 
