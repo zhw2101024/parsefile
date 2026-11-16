@@ -1,12 +1,13 @@
 use chardet::{charset2encoding, detect};
 use encoding::DecoderTrap;
 use encoding::label::encoding_from_whatwg_label;
+use std::result::Result::Ok;
 use std::{collections::BTreeMap, fs::OpenOptions, io::Read, path::Path};
 
 use super::parse_content;
 use crate::{MyError, Program, Record, write_map};
 
-pub fn parse_file(path: &Path) -> Result<i32, MyError> {
+pub fn parse_file(path: &Path) -> Result<String, MyError> {
     let mut fh = OpenOptions::new()
         .read(true)
         .open(path)
@@ -63,7 +64,10 @@ pub fn parse_file(path: &Path) -> Result<i32, MyError> {
             };
         }
     }
-    write_map(&record_map, path)
+    match write_map(&record_map, path) {
+        Ok(_) => Ok(contents),
+        Err(err) => Err(err),
+    }
 }
 
 #[cfg(test)]
