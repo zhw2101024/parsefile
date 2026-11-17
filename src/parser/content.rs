@@ -35,10 +35,9 @@ fn parse_list(source_date: String, line: &str) -> Result<(NaiveDate, u32, u32, &
         let err = Error::new(ErrorKind::InvalidData, format!("Invalid hour: {}", hour));
         return Err(err);
     };
-    let mut item_date = NaiveDate::parse_from_str(source_date.as_str(), "%Y/%m/%d").unwrap();
+    let item_date = NaiveDate::parse_from_str(source_date.as_str(), "%Y/%m/%d").unwrap();
     if hour >= 24 {
         hour -= 24;
-        item_date += TimeDelta::days(1);
     }
     let Some(minute) = minute.parse::<u32>().ok() else {
         let err = Error::new(
@@ -111,10 +110,12 @@ pub fn parse_content_map<'a>(
         is_last,
     } in program_items
     {
+        let mut cross = false;
         if is_last && hour < 12 {
             date += TimeDelta::days(1);
+            cross = true;
         }
-        let item = Item::new(date, hour, minute, name);
+        let item = Item::new(date, hour, minute, name, is_last, cross);
 
         if let std::collections::btree_map::Entry::Vacant(e) = program_map.entry(date) {
             let mut program = Program::default();

@@ -8,15 +8,26 @@ pub struct Item<'a> {
     hour: u32,
     minute: u32,
     name: &'a str,
+    is_last: bool,
+    cross: bool,
 }
 
 impl<'a> Item<'a> {
-    pub fn new(date: NaiveDate, hour: u32, minute: u32, name: &'a str) -> Self {
+    pub fn new(
+        date: NaiveDate,
+        hour: u32,
+        minute: u32,
+        name: &'a str,
+        is_last: bool,
+        cross: bool,
+    ) -> Self {
         Self {
             date,
             hour,
             minute,
             name,
+            is_last,
+            cross,
         }
     }
 }
@@ -42,6 +53,8 @@ impl<'a> Program<'a> {
             hour,
             minute,
             name,
+            is_last,
+            cross,
         } in &self.items
         {
             assert!(*hour < 48, "{hour}");
@@ -62,6 +75,8 @@ impl<'a> Program<'a> {
                 date.to_string(),
                 time,
                 datetime,
+                *is_last,
+                *cross,
             ));
         }
         Ok(records)

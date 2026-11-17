@@ -1,10 +1,11 @@
 use crate::{MyError, Record};
 use chardet::{charset2encoding, detect};
-use chrono::{NaiveDateTime, Timelike};
+use chrono::NaiveDateTime;
 use encoding::DecoderTrap;
 use encoding::label::encoding_from_whatwg_label;
 use rust_xlsxwriter::Workbook;
 
+use crate::{Channel, program_channel};
 use std::fmt;
 use std::{collections::BTreeMap, fs::OpenOptions, io::Read, path::Path};
 
@@ -15,6 +16,8 @@ pub struct DataRecord {
     pub start: String,
     pub end: String,
     datetime: NaiveDateTime,
+    is_last: bool,
+    cross: bool,
 }
 
 impl fmt::Display for DataRecord {
@@ -23,48 +26,69 @@ impl fmt::Display for DataRecord {
     }
 }
 
-fn disabled(name: &str, srcpath: &Path) -> bool {
-    let mut path = srcpath.to_path_buf();
-    path.set_extension("white");
-    let mut fh = match OpenOptions::new().read(true).open(&path) {
-        Ok(fh) => fh,
-        Err(_) => {
-            eprintln!("Could not open file {}", path.to_string_lossy());
-            return true;
-        }
-    };
-    let mut reader: Vec<u8> = Vec::new();
-    let _size = match fh.read_to_end(&mut reader) {
-        Ok(size) => size,
-        Err(_) => {
-            eprintln!("Could not open file {}", path.to_string_lossy());
-            return true;
-        }
-    };
-    let (encode, _confidence, _language) = detect(&reader);
-    let contents = if encode.ne("utf-8") {
-        let Some(coder) = encoding_from_whatwg_label(charset2encoding(&encode)) else {
-            return true;
-        };
-        let Some(contents) = coder.decode(&reader, DecoderTrap::Strict).ok() else {
-            return true;
-        };
-        contents.replace("：", ":")
-    } else {
-        let Some(contents) = String::from_utf8(reader).ok() else {
-            return true;
-        };
-        contents
-    };
+fn disabled_by_channel(name: &str, channel_opt: &Option<Channel>) -> bool {
+    if let Some(channel) = channel_opt {
+        match channel {
+            Channel::Tv(num) => {
+                let filename = format!("{num}.white");
+                let path = Path::new(&filename);
+                let mut fh = match OpenOptions::new().read(true).open(path) {
+                    Ok(fh) => fh,
+                    Err(_) => {
+                        eprintln!("Could not open file {}", path.to_string_lossy());
+                        return true;
+                    }
+                };
+                let mut reader: Vec<u8> = Vec::new();
+                let _size = match fh.read_to_end(&mut reader) {
+                    Ok(size) => size,
+                    Err(_) => {
+                        eprintln!("Could not open file {}", path.to_string_lossy());
+                        return true;
+                    }
+                };
+                let (encode, _confidence, _language) = detect(&reader);
+                let contents = if encode.ne("utf-8") {
+                    let Some(coder) = encoding_from_whatwg_label(charset2encoding(&encode)) else {
+                        return true;
+                    };
+                    let Some(contents) = coder.decode(&reader, DecoderTrap::Strict).ok() else {
+                        return true;
+                    };
+                    contents.replace("：", ":")
+                } else {
+                    let Some(contents) = String::from_utf8(reader).ok() else {
+                        return true;
+                    };
+                    contents
+                };
 
-    let lines = contents.lines();
-    for mut line in lines {
-        line = line.trim();
-        if line.eq(name) {
-            return false;
+                let lines = contents.lines();
+                for mut line in lines {
+                    line = line.trim();
+                    if line.eq(name) {
+                        return false;
+                    }
+                }
+                true
+            }
+            Channel::Open => false,
         }
+    } else {
+        true
     }
-    true
+}
+
+fn end_time(channel: &Channel, next_start: String) -> (bool, String) {
+    match channel {
+        Channel::Tv(num) => match num {
+            1 => (false, "01:20".to_string()),
+            2 => (false, "01:05".to_string()),
+            3 => (false, "01:07".to_string()),
+            _ => (false, "01:00".to_string()),
+        },
+        Channel::Open => (false, next_start),
+    }
 }
 
 pub fn write_map(record_map: &BTreeMap<String, Vec<Record>>, path: &Path) -> Result<i32, MyError> {
@@ -82,7 +106,8 @@ pub fn write_map(record_map: &BTreeMap<String, Vec<Record>>, path: &Path) -> Res
     worksheet.write(1, 3, "结束时间")?;
     worksheet.write(1, 4, "直播状态")?;
 
-    let data_records = data_records(record_map);
+    let channel = program_channel(path);
+    let data_records = data_records(&channel, record_map);
 
     for (
         row_index,
@@ -99,7 +124,7 @@ pub fn write_map(record_map: &BTreeMap<String, Vec<Record>>, path: &Path) -> Res
         worksheet.write(row_index, 1, date)?;
         worksheet.write(row_index, 2, start)?;
         worksheet.write(row_index, 3, end)?;
-        let disabled_str = if disabled(&name, path) {
+        let disabled_str = if disabled_by_channel(&name, &channel) {
             "禁用"
         } else {
             "启用"
@@ -117,16 +142,29 @@ pub fn write_map(record_map: &BTreeMap<String, Vec<Record>>, path: &Path) -> Res
     Ok(number)
 }
 
-fn data_records(record_map: &BTreeMap<String, Vec<Record>>) -> Vec<DataRecord> {
+fn data_records(
+    channel_opt: &Option<Channel>,
+    record_map: &BTreeMap<String, Vec<Record>>,
+) -> Vec<DataRecord> {
     let mut sum_records = Vec::new();
     for records in record_map.values() {
-        for record in records {
+        for Record {
+            name,
+            date,
+            time,
+            datetime,
+            is_last,
+            cross,
+        } in records
+        {
             let datarecord = DataRecord {
-                name: record.name.clone(),
-                date: record.date.clone(),
-                start: record.time.clone(),
+                name: name.clone(),
+                date: date.clone(),
+                start: time.clone(),
                 end: "".to_string(),
-                datetime: record.datetime,
+                datetime: *datetime,
+                is_last: *is_last,
+                cross: *cross,
             };
             sum_records.push(datarecord)
         }
@@ -136,24 +174,68 @@ fn data_records(record_map: &BTreeMap<String, Vec<Record>>) -> Vec<DataRecord> {
         let curr = &sum_records[index];
         if index < sum_records.len() - 1 {
             let next = &sum_records[index + 1];
+            let next_start = next.start.clone();
+
+            let mut end = next_start.clone();
+            if let Some(channel) = channel_opt {
+                let (sameday, day_end) = end_time(channel, next_start);
+                if sameday {
+                    println!("program list may contain program in the next day")
+                } else {
+                    if curr.is_last {
+                        end = day_end;
+                    }
+                }
+            };
+
             if next.datetime.date() > curr.datetime.date() {
-                let mut record = curr.clone();
-                record.end = "23:59:59".to_string();
-                fixed_records.push(record);
-                if next.datetime.time().num_seconds_from_midnight() > 0 {
+                if curr.cross {
+                    let mut record = curr.clone();
+                    record.end = "23:59:59".to_string();
+                    fixed_records.push(record);
+
                     let mut sep_record = curr.clone();
                     sep_record.date = next.date.clone();
                     sep_record.start = "00:00".to_string();
-                    sep_record.end = next.start.clone();
+
+                    if curr.is_last {
+                        sep_record.end = end;
+                    } else {
+                        sep_record.end = next.start.clone();
+                    }
                     fixed_records.push(sep_record);
+                } else {
+                    let mut record = curr.clone();
+                    record.end = "23:59:59".to_string();
+                    fixed_records.push(record);
+
+                    if end.ne("00:00") {
+                        let mut sep_record = curr.clone();
+                        sep_record.date = next.date.clone();
+                        sep_record.start = "00:00".to_string();
+                        sep_record.end = end;
+                        fixed_records.push(sep_record);
+                    }
                 }
             } else {
                 let mut record = curr.clone();
-                record.end = next.start.clone();
+                record.end = end;
                 fixed_records.push(record);
             }
         } else {
-            let record = curr.clone();
+            let mut record = curr.clone();
+            if let Some(first_record) = sum_records.first() {
+                let mut end = first_record.start.clone();
+                if let Some(channel) = channel_opt {
+                    let (sameday, day_end) = end_time(channel, end.clone());
+                    if sameday {
+                        println!("program list may contain program in the next day")
+                    } else {
+                        end = day_end;
+                    }
+                }
+                record.end = end;
+            }
             fixed_records.push(record);
         }
     }
