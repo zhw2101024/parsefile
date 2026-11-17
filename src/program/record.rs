@@ -7,15 +7,26 @@ pub struct Record {
     pub date: String,
     pub time: String,
     pub datetime: NaiveDateTime,
+    pub is_last: bool,
+    pub cross: bool,
 }
 
 impl Record {
-    pub fn new(name: String, date: String, time: String, datetime: NaiveDateTime) -> Record {
+    pub fn new(
+        name: String,
+        date: String,
+        time: String,
+        datetime: NaiveDateTime,
+        is_last: bool,
+        cross: bool,
+    ) -> Record {
         Record {
             name,
             date,
             time,
             datetime,
+            is_last,
+            cross,
         }
     }
 
