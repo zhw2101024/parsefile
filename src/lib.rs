@@ -17,22 +17,26 @@ use std::path::Path;
 #[cfg(feature = "ui")]
 use ui::{SUBJECT, add_observer};
 
+#[cfg(feature = "ui")]
 pub use ui::hello;
 
 use error::{LineError, MyError};
 use output::write_map;
 use program::{Item, Program, Record};
 
-pub fn start() {
-    #[cfg(feature = "ui")]
-    hello();
-    #[cfg(feature = "cli")]
-    match parse_file(Path::new("1.txt")) {
+#[cfg(feature = "cli")]
+pub fn hello() {
+    let path = std::env::args().nth(1).unwrap_or("1.txt".to_string());
+    match parse_file(Path::new(&path)) {
         Ok(number) => {
             println!("passed {} records", number);
         }
         Err(e) => println!("{}", e),
     };
+}
+
+pub fn start() {
+    hello();
 }
 
 pub fn init_subject() {
